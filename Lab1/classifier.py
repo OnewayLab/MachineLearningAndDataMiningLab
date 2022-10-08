@@ -124,10 +124,8 @@ if __name__ == "__main__":
     # 数据处理
     X_train, y_train, X_test, y_test = data_process(TRAIN_PATH, TEST_PATH)
 
-    # 使用 hinge loss
+    # 使用 hinge loss 的线性分类器
     print("使用 hinge loss 训练")
-
-    ## 训练模型
     hinge_loss_model = LinearClassifier(
         loss="hinge",
         learning_rate=0.1,
@@ -135,16 +133,12 @@ if __name__ == "__main__":
         batch_size=32,
     )
     hinge_loss_model.fit(X_train, y_train)
-
-    ## 计算准确率
     train_acc = hinge_loss_model.score(X_train, y_train)
     test_acc = hinge_loss_model.score(X_test, y_test)
     print("训练集准确率: {}, 测试集准确率: {}".format(train_acc, test_acc))
 
-    # 使用交叉熵误差
+    # 使用交叉熵误差的线性分类器
     print("使用交叉熵损失训练")
-
-    ## 训练模型
     cross_entropy_loss_model = LinearClassifier(
         loss="cross_entropy",
         learning_rate=0.1,
@@ -152,14 +146,18 @@ if __name__ == "__main__":
         batch_size=32,
     )
     cross_entropy_loss_model.fit(X_train, y_train)
-
-    ## 计算准确率
     train_acc = cross_entropy_loss_model.score(X_train, y_train)
     test_acc = cross_entropy_loss_model.score(X_test, y_test)
     print("训练集准确率: {}, 测试集准确率: {}".format(train_acc, test_acc))
 
+    # 使用线性核函数的 SVM
+    print("使用线性核函数的 SVM")
+    linear_svm_model = svm.SVC(C=1, kernel="linear", gamma="auto")
+    linear_svm_model.fit(X_train, y_train)
+    print("训练集准确率: {}, 测试集准确率: {}".format(linear_svm_model.score(X_train, y_train), linear_svm_model.score(X_test, y_test)))
+
     # 使用高斯核函数的 SVM
     print("使用高斯核函数的 SVM")
-    svm_model = svm.SVC(C=1, kernel="rbf", gamma="auto")
-    svm_model.fit(X_train, y_train)
-    print("训练集准确率: {}, 测试集准确率: {}".format(svm_model.score(X_train, y_train), svm_model.score(X_test, y_test)))
+    rbf_svm_model = svm.SVC(C=1, kernel="rbf", gamma="auto")
+    rbf_svm_model.fit(X_train, y_train)
+    print("训练集准确率: {}, 测试集准确率: {}".format(rbf_svm_model.score(X_train, y_train), rbf_svm_model.score(X_test, y_test)))
