@@ -30,11 +30,9 @@ def data_process(
     y_test = test_data[:, 0]
 
     # 归一化
-    X_min = np.min(X_train, axis=0)
-    X_max = np.max(X_train, axis=0) + 1e-7
-    X_train = (X_train - X_min) / X_max
-    X_valid = (X_valid - X_min) / X_max
-    X_test = (X_test - X_min) / X_max
+    X_train = X_train / 255
+    X_valid = X_valid / 255
+    X_test = X_test / 255
 
     # 把 {0, 1} 标签转换为 {-1, 1} 标签
     y_train[y_train == 0] = -1
@@ -158,7 +156,7 @@ if __name__ == "__main__":
     hinge_loss_model = LinearClassifier(
         loss="hinge",
         learning_rate=0.1,
-        epoch=20,
+        epoch=50,
         batch_size=32,
     )
     hinge_loss_model.fit(X_train, y_train, X_valid, y_valid)
@@ -172,7 +170,7 @@ if __name__ == "__main__":
     cross_entropy_loss_model = LinearClassifier(
         loss="cross_entropy",
         learning_rate=0.1,
-        epoch=20,
+        epoch=50,
         batch_size=32,
     )
     cross_entropy_loss_model.fit(X_train, y_train, X_valid, y_valid)
