@@ -16,6 +16,7 @@ def data_process(
     :param test_path: 测试集路径
     :return: 训练集输入、训练集标签、测试集输入、测试集标签
     """
+    # 读取数据
     train_data = pd.read_csv(train_path)
     test_data = pd.read_csv(test_path)
     X_train = train_data.iloc[:, 1:].values
@@ -23,11 +24,13 @@ def data_process(
     X_test = test_data.iloc[:, 1:].values
     y_test = test_data.iloc[:, 0].values
 
+    # 归一化
     X_min = np.min(X_train, axis=0)
     X_max = np.max(X_train, axis=0) + 1e-7
     X_train = (X_train - X_min) / X_max
     X_test = (X_test - X_min) / X_max
 
+    # 把 {0, 1} 标签转换为 {-1, 1} 标签
     y_train[y_train == 0] = -1
     y_test[y_test == 0] = -1
     return X_train, y_train, X_test, y_test
