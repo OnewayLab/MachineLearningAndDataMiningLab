@@ -22,57 +22,71 @@ def data_process(
     y_train = train_data.iloc[:, 0].values
     X_test = test_data.iloc[:, 1:].values
     y_test = test_data.iloc[:, 0].values
+
+    X_min = np.min(X_train, axis=0)
+    X_max = np.max(X_train, axis=0) + 1e-7
+    X_train = (X_train - X_min) / X_max
+    X_test = (X_test - X_min) / X_max
+
+    y_train[y_train == 0] = -1
+    y_test[y_test == 0] = -1
     return X_train, y_train, X_test, y_test
 
 
-def hinge_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray) -> float:
+def hinge_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray, b: np.ndarray) -> float:
     """
     计算 hinge loss
     :param X: 输入
     :param y: 标签
     :param w: 权重
+    :param b: 偏置
     :return: hinge loss
     """
-    loss = np.maximum(0, 1 - y * np.dot(X, w))
+    loss = np.maximum(0, 1 - y * (np.dot(X, w) + b))
     return np.mean(loss)
 
 
-def hinge_loss_gradient(X: np.ndarray, y: np.ndarray, w: np.ndarray) -> np.ndarray:
+def hinge_loss_gradient(X: np.ndarray, y: np.ndarray, w: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     计算 hinge loss 的梯度
     :param X: 输入
     :param y: 标签
     :param w: 权重
+    :param b: 偏置
     :return: 梯度
     """
-    grad = -np.dot(X.T, y * (y * np.dot(X, w) < 1)) / X.shape[0]
-    return grad
+    dw = np.dot(X.T, (y * (np.dot(X, w) + b) < 1).astype(int) * -y) / X.shape[0]
+    db = np.mean((y * (np.dot(X, w) + b) < 1).astype(int) * -y)
+    return dw, db
 
 
-def cross_entropy_loss(X, y, w) -> float:
+def cross_entropy_loss(X: np.ndarray, y: np.ndarray, w: np.ndarray, b: np.ndarray) -> float:
     """
     计算交叉熵损失
     :param X: 输入
     :param y: 标签
     :param w: 权重
+    :param b: 偏置
     :return: 交叉熵损失
     """
-    loss = np.log(1 + np.exp(-y * np.dot(X, w)))
+    loss = np.log(1 + np.exp(-y * (np.dot(X, w) + b)))
     return np.mean(loss)
 
 
 def cross_entropy_loss_gradient(
-    X: np.ndarray, y: np.ndarray, w: np.ndarray
-) -> np.ndarray:
+    X: np.ndarray, y: np.ndarray, w: np.ndarray, b: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """
     计算交叉熵损失的梯度
     :param X: 输入
     :param y: 标签
     :param w: 权重
+    :param b: 偏置
     :return: 梯度
     """
-    grad = -np.dot(X.T, y * (1 - 1 / (1 + np.exp(y * np.dot(X, w))))) / X.shape[0]
-    return grad
+    dw = -np.dot(X.T, y  / (1 + np.exp(y * (np.dot(X, w) + b)))) / X.shape[0]
+    db = -np.mean(y / (1 + np.exp(y * (np.dot(X, w) + b))))
+    return dw, db
 
 
 class LinearClassifier:
@@ -105,8 +119,9 @@ class LinearClassifier:
         :param y: 标签
         :return: None
         """
-        # 初始化权重
+        # 初始化权重和偏置
         self.w = np.random.normal(size=X.shape[1])
+        self.b = np.random.normal(size=1)
 
         # 训练
         for i in range(self.max_iter):
@@ -116,14 +131,15 @@ class LinearClassifier:
             y_batch = y[batch_idx]
 
             # 计算梯度
-            grad = self.loss_gradient(X_batch, y_batch, self.w)
+            dw, db = self.loss_gradient(X_batch, y_batch, self.w, self.b)
 
-            # 更新权重
-            self.w -= self.learning_rate * grad
+            # 更新参数
+            self.w -= self.learning_rate * dw
+            self.b -= self.learning_rate * db
 
             # 打印训练过程
             if i % 100 == 0:
-                print("iter: {}, loss: {}".format(i, self.loss(X, y, self.w)))
+                print("iter: {}, loss: {}".format(i, self.loss(X, y, self.w, self.b)))
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -131,7 +147,7 @@ class LinearClassifier:
         :param X: 输入
         :return: 预测结果
         """
-        return np.sign(np.dot(X, self.w))
+        return np.sign(np.dot(X, self.w) + self.b)
 
     def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """
@@ -156,8 +172,8 @@ if __name__ == "__main__":
     hinge_loss_model = LinearClassifier(
         loss=hinge_loss,
         loss_gradient=hinge_loss_gradient,
-        learning_rate=0.01,
-        max_iter=1000,
+        learning_rate=0.1,
+        max_iter=2000,
         batch_size=32,
     )
     hinge_loss_model.fit(X_train, y_train)
@@ -174,8 +190,8 @@ if __name__ == "__main__":
     cross_entropy_loss_model = LinearClassifier(
         loss=cross_entropy_loss,
         loss_gradient=cross_entropy_loss_gradient,
-        learning_rate=0.01,
-        max_iter=1000,
+        learning_rate=0.1,
+        max_iter=2000,
         batch_size=32,
     )
     cross_entropy_loss_model.fit(X_train, y_train)
