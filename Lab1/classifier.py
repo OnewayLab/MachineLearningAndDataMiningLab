@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from sklearn import svm
+import matplotlib.pyplot as plt
+import time
 
 # 文件路径
 TRAIN_PATH = "data/mnist_01_train.csv"
@@ -78,6 +80,10 @@ class LinearClassifier:
         self.learning_rate = learning_rate
         self.epoch = epoch
         self.batch_size = batch_size
+        self.train_loss = []
+        self.valid_loss = []
+        self.train_acc = []
+        self.valid_acc = []
 
     def fit(
         self,
@@ -115,6 +121,8 @@ class LinearClassifier:
             # 计算损失和准确率
             train_loss = self.loss(X_train, y_train)
             train_acc = self.score(X_train, y_train)
+            self.train_loss.append(train_loss)
+            self.train_acc.append(train_acc)
             print(
                 f"EPOCH {i + 1} / {self.epoch}, train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}",
                 end="",
@@ -122,10 +130,24 @@ class LinearClassifier:
             if X_valid is not None and y_valid is not None:
                 valid_loss = self.loss(X_valid, y_valid)
                 valid_acc = self.score(X_valid, y_valid)
+                self.valid_loss.append(valid_loss)
+                self.valid_acc.append(valid_acc)
                 print(
                     f", valid_loss={valid_loss:.4f}, valid_acc={valid_acc:.4f}", end=""
                 )
             print()
+
+        # 画图
+        plt.figure(figsize=(10, 5))
+        plt.subplot(1, 2, 1)
+        plt.plot(self.train_loss, label="train_loss")
+        plt.plot(self.valid_loss, label="valid_loss")
+        plt.legend()
+        plt.subplot(1, 2, 2)
+        plt.plot(self.train_acc, label="train_acc")
+        plt.plot(self.valid_acc, label="valid_acc")
+        plt.legend()
+        plt.show()
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -159,10 +181,13 @@ if __name__ == "__main__":
         epoch=50,
         batch_size=32,
     )
+    start = time.time()
     hinge_loss_model.fit(X_train, y_train, X_valid, y_valid)
+    end = time.time()
     train_acc = hinge_loss_model.score(X_train, y_train)
     test_acc = hinge_loss_model.score(X_test, y_test)
     print(f"训练集准确率: {train_acc}, 测试集准确率: {test_acc}")
+    print(f"训练用时: {end - start:.4f} s")
     print()
 
     # 使用交叉熵误差的线性分类器
@@ -173,27 +198,34 @@ if __name__ == "__main__":
         epoch=50,
         batch_size=32,
     )
+    start = time.time()
     cross_entropy_loss_model.fit(X_train, y_train, X_valid, y_valid)
+    end = time.time()
     train_acc = cross_entropy_loss_model.score(X_train, y_train)
     test_acc = cross_entropy_loss_model.score(X_test, y_test)
     print(f"训练集准确率: {train_acc}, 测试集准确率: {test_acc}")
+    print(f"训练用时: {end - start:.4f} s")
     print()
 
     # 使用线性核函数的 SVM
     print("使用线性核函数的 SVM")
     linear_svm_model = svm.SVC(C=1, kernel="linear", gamma="auto")
+    start = time.time()
     linear_svm_model.fit(X_train, y_train)
-    print(
-        f"训练集准确率: {linear_svm_model.score(X_train, y_train)}, "
-        f"测试集准确率: {linear_svm_model.score(X_test, y_test)}"
-    )
+    end = time.time()
+    train_acc = linear_svm_model.score(X_train, y_train)
+    test_acc = linear_svm_model.score(X_test, y_test)
+    print(f"训练集准确率: {train_acc}, 测试集准确率: {test_acc}")
+    print(f"训练用时: {end - start:.4f} s")
     print()
 
     # 使用高斯核函数的 SVM
     print("使用高斯核函数的 SVM")
     rbf_svm_model = svm.SVC(C=1, kernel="rbf", gamma="auto")
+    start = time.time()
     rbf_svm_model.fit(X_train, y_train)
-    print(
-        f"训练集准确率: {rbf_svm_model.score(X_train, y_train)}, "
-        f"测试集准确率: {rbf_svm_model.score(X_test, y_test)}"
-    )
+    end = time.time()
+    train_acc = rbf_svm_model.score(X_train, y_train)
+    test_acc = rbf_svm_model.score(X_test, y_test)
+    print(f"训练集准确率: {train_acc}, 测试集准确率: {test_acc}")
+    print(f"训练用时: {end - start:.4f} s")
