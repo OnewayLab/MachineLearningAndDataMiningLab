@@ -93,6 +93,8 @@ class LinearClassifier:
         y_train: np.ndarray,
         X_valid: np.ndarray = None,
         y_valid: np.ndarray = None,
+        print_log: bool = False,
+        save_loss_plot: bool = True,
     ):
         """
         训练模型
@@ -104,6 +106,10 @@ class LinearClassifier:
         # 初始化权重和偏置
         self.w = np.random.normal(size=X_train.shape[1])
         self.b = np.random.normal(size=1)
+
+        best_acc = 0.0
+        best_w = self.w
+        best_b = self.b
 
         # 训练
         for i in range(self.epoch):
@@ -125,19 +131,32 @@ class LinearClassifier:
             train_acc = self.score(X_train, y_train)
             self.train_loss.append(train_loss)
             self.train_acc.append(train_acc)
-            # print(
-            #     f"EPOCH {i + 1} / {self.epoch}, train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}",
-            #     end="",
-            # )
+            if print_log:
+                print(
+                    f"EPOCH {i + 1} / {self.epoch}, train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}",
+                    end="",
+                )
             if X_valid is not None and y_valid is not None:
                 valid_loss = self.loss_function(X_valid, y_valid)
                 valid_acc = self.score(X_valid, y_valid)
                 self.valid_loss.append(valid_loss)
                 self.valid_acc.append(valid_acc)
-                # print(
-                #     f", valid_loss={valid_loss:.4f}, valid_acc={valid_acc:.4f}", end=""
-                # )
-            # print()
+                if print_log:
+                    print(
+                        f", valid_loss={valid_loss:.4f}, valid_acc={valid_acc:.4f}", end=""
+                    )
+            if print_log:
+                print()
+
+            # 保存最好的模型
+            if valid_acc > best_acc:
+                best_acc = valid_acc
+                best_w = self.w
+                best_b = self.b
+
+        # 恢复最好的模型
+        self.w = best_w
+        self.b = best_b
 
         # 画图
         plt.figure(figsize=(10, 5))
@@ -149,8 +168,11 @@ class LinearClassifier:
         plt.plot(self.train_acc, label="train_acc")
         plt.plot(self.valid_acc, label="valid_acc")
         plt.legend()
-        os.makedirs("images", exist_ok=True)
-        plt.savefig(f"images/linear_classifier_{self.loss}.png")
+        if save_loss_plot:
+            os.makedirs("images", exist_ok=True)
+            plt.savefig(f"images/linear_classifier_{self.loss}.png")
+        else:
+            plt.show()
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
@@ -180,7 +202,7 @@ if __name__ == "__main__":
     print("使用 hinge loss 训练")
     hinge_loss_model = LinearClassifier(
         loss="hinge",
-        learning_rate=0.1,
+        learning_rate=1,
         epoch=50,
         batch_size=32,
     )
