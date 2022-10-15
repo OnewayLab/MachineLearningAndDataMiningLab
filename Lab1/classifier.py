@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from sklearn import svm
@@ -32,9 +33,9 @@ def data_process(
     y_test = test_data[:, 0]
 
     # 归一化
-    X_train = X_train / 255
-    X_valid = X_valid / 255
-    X_test = X_test / 255
+    X_train = X_train / 255 * 2 - 1
+    X_valid = X_valid / 255 * 2 - 1
+    X_test = X_test / 255 * 2 - 1
 
     # 把 {0, 1} 标签转换为 {-1, 1} 标签
     y_train[y_train == 0] = -1
@@ -60,7 +61,7 @@ class LinearClassifier:
         :param batch_size: batch 大小
         """
         if loss == "hinge":
-            self.loss = lambda X, y: np.mean(
+            self.loss_function = lambda X, y: np.mean(
                 np.maximum(0, 1 - y * (np.dot(X, self.w) + self.b))
             )
             self.loss_gradient = lambda X, y: (
@@ -69,7 +70,7 @@ class LinearClassifier:
                 np.mean((y * (np.dot(X, self.w) + self.b) < 1).astype(int) * -y),
             )
         elif loss == "cross_entropy":
-            self.loss = lambda X, y: np.mean(
+            self.loss_function = lambda X, y: np.mean(
                 np.log(1 + np.exp(-y * (np.dot(X, self.w) + self.b)))
             )
             self.loss_gradient = lambda X, y: (
@@ -77,6 +78,7 @@ class LinearClassifier:
                 / X.shape[0],
                 -np.mean(y / (1 + np.exp(y * (np.dot(X, self.w) + self.b)))),
             )
+        self.loss = loss
         self.learning_rate = learning_rate
         self.epoch = epoch
         self.batch_size = batch_size
@@ -119,23 +121,23 @@ class LinearClassifier:
                 self.b -= self.learning_rate * db
 
             # 计算损失和准确率
-            train_loss = self.loss(X_train, y_train)
+            train_loss = self.loss_function(X_train, y_train)
             train_acc = self.score(X_train, y_train)
             self.train_loss.append(train_loss)
             self.train_acc.append(train_acc)
-            print(
-                f"EPOCH {i + 1} / {self.epoch}, train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}",
-                end="",
-            )
+            # print(
+            #     f"EPOCH {i + 1} / {self.epoch}, train_loss: {train_loss:.4f}, train_acc: {train_acc:.4f}",
+            #     end="",
+            # )
             if X_valid is not None and y_valid is not None:
-                valid_loss = self.loss(X_valid, y_valid)
+                valid_loss = self.loss_function(X_valid, y_valid)
                 valid_acc = self.score(X_valid, y_valid)
                 self.valid_loss.append(valid_loss)
                 self.valid_acc.append(valid_acc)
-                print(
-                    f", valid_loss={valid_loss:.4f}, valid_acc={valid_acc:.4f}", end=""
-                )
-            print()
+                # print(
+                #     f", valid_loss={valid_loss:.4f}, valid_acc={valid_acc:.4f}", end=""
+                # )
+            # print()
 
         # 画图
         plt.figure(figsize=(10, 5))
@@ -147,7 +149,8 @@ class LinearClassifier:
         plt.plot(self.train_acc, label="train_acc")
         plt.plot(self.valid_acc, label="valid_acc")
         plt.legend()
-        plt.show()
+        os.makedirs("images", exist_ok=True)
+        plt.savefig(f"images/linear_classifier_{self.loss}.png")
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
