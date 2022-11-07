@@ -1,8 +1,6 @@
-
-
 # load cifar-10 data
 
-def load_data(dir="./batched_cifar10"):
+def load_data(dir="../batched_cifar10"):
     import pickle
     import numpy as np
 
