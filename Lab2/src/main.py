@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import os
 
-from classifiers import LinearClassfier
+from classifiers import LinearClassifier, MLPClassifier, CNNClassifier
 from trainer import trainer
 from load_data import load_data
 
@@ -23,13 +23,13 @@ if __name__ == "__main__":
     X_train, Y_train, X_test, Y_test = load_data()
 
     # 数据预处理
-    X_train = torch.from_numpy(X_train).float() / 255
+    X_train = torch.from_numpy(X_train).float() / 255 * 2 - 1
     Y_train = torch.from_numpy(Y_train).long()
-    X_test = torch.from_numpy(X_test).float() / 255
+    X_test = torch.from_numpy(X_test).float() / 255 * 2 - 1
     Y_test = torch.from_numpy(Y_test).long()
 
     # 训练模型
-    model = LinearClassfier(INPUT_SIZE, OUTPUT_SIZE)
+    model = LinearClassifier(INPUT_SIZE, OUTPUT_SIZE)
     trainer(
         model,
         X_train,
