@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-
+from tqdm import tqdm
 
 def trainer(
     model,
@@ -56,7 +56,7 @@ def trainer(
     elif optimizer == "Momentum":
         optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
     elif optimizer == "Adam":
-        optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     else:
         raise ValueError("optimizer must be one of SGD, Momentum or Adam")
 
@@ -70,22 +70,29 @@ def trainer(
         print(f"Epoch {epoch + 1}/{epochs}")
         # 训练
         total_loss = 0
-        for i in range(0, len(train_x), batch_size):
+        for i in tqdm(range(0, len(train_x), batch_size)):
+            batch_x = train_x[i : i + batch_size]
+            batch_y = train_y[i : i + batch_size]
             optimizer.zero_grad()
-            loss = model.loss(train_x[i : i + batch_size], train_y[i : i + batch_size])
-            total_loss += loss.item()
+            loss = model.loss(batch_x, batch_y)
+            total_loss += loss.item() * len(batch_x)
             loss.backward()
             optimizer.step()
         train_loss.append(total_loss / len(train_x))
         print(f"\tTraining loss: {train_loss[-1]}")
         # 验证
         with torch.no_grad():
-            loss = model.loss(val_x, val_y)
-            val_loss.append(loss.item())
+            total_loss = 0
+            for i in range(0, len(val_x), batch_size):
+                batch_x = val_x[i : i + batch_size]
+                batch_y = val_y[i : i + batch_size]
+                loss = model.loss(batch_x, batch_y)
+                total_loss += loss.item() * len(batch_x)
+            val_loss.append(total_loss / len(val_x))
             print(f"\tValidation loss: {val_loss[-1]}")
             # 保存最好的模型
-            if loss < best_val_loss:
-                best_val_loss = loss
+            if total_loss < best_val_loss:
+                best_val_loss = total_loss
                 torch.save(model.state_dict(), model_path)
                 pacient_count = 0
                 print("\tBest model saved!")
@@ -96,10 +103,6 @@ def trainer(
                     break
     print(f"Training finished in {time.time() - start_time}s")
 
-    # 加载最好的模型
-    model.load_state_dict(torch.load(model_path))
-    print("Best model loaded!")
-
     # 绘制损失曲线
     plt.figure()
     plt.plot(train_loss, label="Training loss")
@@ -109,8 +112,18 @@ def trainer(
     plt.legend()
     plt.savefig(plot_path)
 
-    # 测试
-    print("Start Testing")
-    model.eval()
-    test_acc = model.accuracy(x_test, y_test)
-    print(f"Test set accuracy: {test_acc}")
+    with torch.no_grad():
+        # 加载最好的模型
+        model.load_state_dict(torch.load(model_path))
+        print("Best model loaded!")
+
+        # 测试
+        print("Start Testing")
+        model.eval()
+        test_acc = 0
+        for i in range(0, len(x_test), batch_size):
+            batch_x = x_test[i : i + batch_size]
+            batch_y = y_test[i : i + batch_size]
+            test_acc += (model(batch_x).argmax(dim=1) == batch_y).sum().item()
+        test_acc /= len(x_test)
+        print(f"Test set accuracy: {test_acc * 100}%")
