@@ -5,17 +5,31 @@ import os
 
 
 class KMeans:
-    def __init__(self, k):
+    def __init__(self, k, init_method="random"):
+        """
+        K-Means 聚类算法
+        :param k: 聚类数目
+        :param init_method: 初始化质心的方法，“random”表示随机初始化，“distance”表示基于距离初始化
+        """
         self.k = k
         self.centers = None
+        self.init_method = init_method
 
     def fit(self, X):
         """
         训练模型
         :param X: 训练集
         """
-        # 随机选择K个点作为初始质心
-        mask = np.random.choice(X.shape[0], self.k)
+        if self.init_method == "random":
+            # 随机选择K个点作为初始质心
+            mask = np.random.choice(X.shape[0], self.k)
+        else:
+            # 随机选择一个点作为初始质心
+            mask = [np.random.choice(X.shape[0])]
+            # 选择距离上一个质心最远的点作为下一个质心
+            for _ in range(self.k - 1):
+                dist = np.array([np.min(self.distance(point, X[mask])) for point in X])
+                mask.append(np.argmax(dist))
         self.centers = X[mask]
 
         while True:

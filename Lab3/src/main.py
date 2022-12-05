@@ -39,8 +39,9 @@ if __name__ == "__main__":
     train_X, train_y = train_data[:, 1:], train_data[:, 0]
     test_X, test_y = test_data[:, 1:], test_data[:, 0]
 
-    # KMeans聚类
-    print("Training K-Means model...")
+    # KMeans聚类（随机初始化）
+    # 训练模型
+    print("Training K-Means model inited randomly...")
     start_time = time.time()
     kmeans = KMeans(K)
     kmeans.fit(train_X)
@@ -48,11 +49,26 @@ if __name__ == "__main__":
     test_predict = kmeans.predict(test_X)
     end_time = time.time()
     print("K-Means model training time: {}s".format(end_time - start_time))
-
     # 评估聚类结果
     print("Evaluating K-Means model...")
     train_score = evaluate(train_y, train_predict)
     test_score = evaluate(test_y, test_predict)
+    print("Train score: {}".format(train_score))
+    print("Test score: {}".format(test_score))
 
+    # KMeans聚类（基于距离的初始化）
+    # 训练模型
+    print("Training K-Means model inited based on distance...")
+    start_time = time.time()
+    kmeans = KMeans(K, init_method="distance")
+    kmeans.fit(train_X)
+    train_predict = kmeans.predict(train_X)
+    test_predict = kmeans.predict(test_X)
+    end_time = time.time()
+    print("K-Means model training time: {}s".format(end_time - start_time))
+    # 评估聚类结果
+    print("Evaluating K-Means model...")
+    train_score = evaluate(train_y, train_predict)
+    test_score = evaluate(test_y, test_predict)
     print("Train score: {}".format(train_score))
     print("Test score: {}".format(test_score))
