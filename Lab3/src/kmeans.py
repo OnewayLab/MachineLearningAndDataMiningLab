@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-
 class KMeans:
     def __init__(self, k, init_method="random"):
         """
@@ -15,10 +14,12 @@ class KMeans:
         self.centers = None
         self.init_method = init_method
 
-    def fit(self, X):
+    def train(self, X, max_iter=100, callback=None):
         """
         训练模型
         :param X: 训练集
+        :param max_iter: 最大迭代次数
+        :param callback: 回调函数，将在每次迭代结束时调用
         """
         if self.init_method == "random":
             # 随机选择K个点作为初始质心
@@ -32,7 +33,7 @@ class KMeans:
                 mask.append(np.argmax(dist))
         self.centers = X[mask]
 
-        while True:
+        for _ in range(max_iter):
             # 将每个点指派到最近的质心
             category = [[] for _ in range(self.k)]
             for point in X:
@@ -53,6 +54,10 @@ class KMeans:
 
             # 更新质心坐标
             self.centers = new_centers
+
+            # 调用回调函数
+            if callback:
+                callback()
 
     def predict(self, X):
         """

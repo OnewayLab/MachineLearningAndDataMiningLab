@@ -1,9 +1,13 @@
 import time
 import numpy as np
 import os
-from sklearn import metrics
-from kmeans import KMeans
 from scipy.optimize import linear_sum_assignment
+from sklearn.decomposition import PCA
+import matplotlib.pyplot as plt
+from kmeans import KMeans
+from gmm import GMM
+
+np.random.seed(5678)
 
 # 数据集路径
 TRAIN_PATH = "../data/mnist_train.csv"
@@ -34,41 +38,51 @@ if __name__ == "__main__":
     # 读取数据集
     print("Loading data...")
     train_data = np.loadtxt(open(TRAIN_PATH, "rb"), delimiter=",", skiprows=1)
+    train_data, validate_data = train_data[:int(len(train_data) * 0.8)], train_data[int(len(train_data) * 0.8):]
     test_data = np.loadtxt(open(TEST_PATH, "rb"), delimiter=",", skiprows=1)
     np.random.shuffle(train_data)
-    train_X, train_y = train_data[:, 1:], train_data[:, 0]
+    train_X, _ = train_data[:, 1:], train_data[:, 0]
+    validate_X, validate_y = validate_data[:, 1:], validate_data[:, 0]
     test_X, test_y = test_data[:, 1:], test_data[:, 0]
 
-    # KMeans聚类（随机初始化）
-    # 训练模型
-    print("Training K-Means model inited randomly...")
-    start_time = time.time()
-    kmeans = KMeans(K)
-    kmeans.fit(train_X)
-    train_predict = kmeans.predict(train_X)
-    test_predict = kmeans.predict(test_X)
-    end_time = time.time()
-    print("K-Means model training time: {}s".format(end_time - start_time))
-    # 评估聚类结果
-    print("Evaluating K-Means model...")
-    train_score = evaluate(train_y, train_predict)
-    test_score = evaluate(test_y, test_predict)
-    print("Train score: {}".format(train_score))
-    print("Test score: {}".format(test_score))
+    # 使用 PCA 进行降维
+    pca = PCA(50)
+    train_X = pca.fit_transform(train_X)
+    validate_X = pca.transform(validate_X)
+    test_X = pca.transform(test_X)
 
-    # KMeans聚类（基于距离的初始化）
-    # 训练模型
-    print("Training K-Means model inited based on distance...")
-    start_time = time.time()
-    kmeans = KMeans(K, init_method="distance")
-    kmeans.fit(train_X)
-    train_predict = kmeans.predict(train_X)
-    test_predict = kmeans.predict(test_X)
-    end_time = time.time()
-    print("K-Means model training time: {}s".format(end_time - start_time))
-    # 评估聚类结果
-    print("Evaluating K-Means model...")
-    train_score = evaluate(train_y, train_predict)
-    test_score = evaluate(test_y, test_predict)
-    print("Train score: {}".format(train_score))
-    print("Test score: {}".format(test_score))
+    # 定义模型
+    models = {
+        "K-Means (random init)": KMeans(K, init_method="random"),
+        "K-Means (distance-based init)": KMeans(K, init_method="distance"),
+        # "GMM (random init, ordinary cov)":GMM(K, init_method="random", cov_type="ordinary"),
+        # "GMM (random init, diag cov)":GMM(K, init_method="random", cov_type="diag"),
+        # "GMM (random init, diag cov with the same element": GMM(K, init_method="random", cov_type="diag_same"),
+        # "GMM (random posterior init, ordinary cov": GMM(K, init_method="random_posterior", cov_type="ordinary"),
+        # "GMM (init by k-means, ordinary cov": GMM(K, init_method="k-means", cov_type="ordinary"),
+    }
+
+    # 各个模型训练时验证集准去率
+    validate_acc = {k: [] for k in models}
+
+    for name, model in models.items():
+        # 训练模型
+        print(f"Training {name}...")
+        start_time = time.time()
+        model.train(
+            train_X,
+            lambda: validate_acc[name].append(evaluate(model.predict(validate_X), validate_y))
+        )
+        end_time = time.time()
+        print("K-Means model training time: {}s".format(end_time - start_time))
+        # 评估聚类结果
+        print("Evaluating K-Means model...")
+        test_predict = model.predict(test_X)
+        test_score = evaluate(test_y, test_predict)
+        print("Test score: {}".format(test_score))
+
+    # 画曲线
+    for name, acc_list in validate_acc.items():
+        plt.plot(acc_list, label=name)
+    plt.legend()
+    plt.show()
