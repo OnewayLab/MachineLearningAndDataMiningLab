@@ -18,7 +18,7 @@ class GMM:
         self.covs = None
         self.priors = None
 
-    def train(self, X, max_iter=100, call_back=None):
+    def train(self, X, max_iter=100, callback=None):
         """
         训练模型
         :param X: 训练集
@@ -62,7 +62,6 @@ class GMM:
 
         # 训练
         for i in range(max_iter):
-            print(f"Iter: {i}")
             # E步，计算隐变量的后验概率
             posterior = self.__E_step(X)
             # M步，更新参数
@@ -77,8 +76,8 @@ class GMM:
             self.covs = new_covs
             self.priors = new_priors
             #调用回调函数
-            if call_back:
-                call_back()
+            if callback:
+                callback()
 
     def __E_step(self, X):
         """
