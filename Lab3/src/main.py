@@ -47,7 +47,7 @@ def draw(acc_dict, type):
     """
     plt.figure(type)
     for name, acc_list in acc_dict.items():
-        if type == "all" or type in name:
+        if type == "All" or type in name:
             plt.plot(acc_list, label=name)
     plt.legend()
     plt.savefig(f"{FIGURE_PATH}/{type}.jpg")
@@ -91,8 +91,9 @@ if __name__ == "__main__":
     validate_acc = {k: [] for k in models}
 
     for name, model in models.items():
+        print(f"{name}")
         # 训练模型
-        print(f"Training {name}...")
+        print(f"\tTraining...")
         start_time = time.time()
         model.train(
             train_X,
@@ -100,12 +101,12 @@ if __name__ == "__main__":
             callback=lambda: validate_acc[name].append(evaluate(model.predict(validate_X), validate_y)),
         )
         end_time = time.time()
-        print("K-Means model training time: {}s".format(end_time - start_time))
+        print("\tElapsed time: {}s".format(end_time - start_time))
         # 评估聚类结果
-        print("Evaluating K-Means model...")
+        print("\tEvaluating...")
         test_predict = model.predict(test_X)
         test_score = evaluate(test_y, test_predict)
-        print("Test score: {}".format(test_score))
+        print("\tTest score: {}".format(test_score))
         # 结果可视化
         plt.figure(name)
         for i in range(K):
@@ -121,5 +122,6 @@ if __name__ == "__main__":
 
     # 绘制训练过程验证集聚类精度曲线
     draw(validate_acc, "K-Means")
-    draw(validate_acc, "GMM")
-    draw(validate_acc, "all")
+    draw(validate_acc, "ordinary cov")
+    draw(validate_acc, "random init")
+    draw(validate_acc, "All")

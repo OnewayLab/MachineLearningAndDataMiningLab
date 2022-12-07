@@ -21,6 +21,7 @@ class KMeans:
         :param max_iter: 最大迭代次数
         :param callback: 回调函数，将在每次迭代结束时调用
         """
+        # 初始化质心
         if self.init_method == "random":
             # 随机选择K个点作为初始质心
             mask = np.random.choice(X.shape[0], self.k)
@@ -29,32 +30,27 @@ class KMeans:
             mask = [np.random.choice(X.shape[0])]
             # 选择距离上一个质心最远的点作为下一个质心
             for _ in range(self.k - 1):
-                dist = np.array([np.min(self.distance(point, X[mask])) for point in X])
+                dist = np.array([np.min(self.__distance(point, X[mask])) for point in X])
                 mask.append(np.argmax(dist))
         self.centers = X[mask]
 
+        # 训练模型
         for _ in range(max_iter):
             # 将每个点指派到最近的质心
             category = [[] for _ in range(self.k)]
             for point in X:
-                dist = self.distance(point, self.centers)
+                dist = self.__distance(point, self.centers)
                 point_category = np.argmin(dist)
                 category[point_category].append(point)
-
             # 计算新质心坐标
             new_centers = np.zeros_like(self.centers)
             for j in range(self.k):
-                new_centers[j] = np.sum(np.array(category[j]), axis=0) / len(
-                    category[j]
-                )
-
+                new_centers[j] = np.sum(np.array(category[j]), axis=0) / len(category[j])
             # 质心无变化则结束循环
             if (new_centers == self.centers).all():
                 break
-
             # 更新质心坐标
             self.centers = new_centers
-
             # 调用回调函数
             if callback:
                 callback()
@@ -65,10 +61,10 @@ class KMeans:
         :param X: 测试集
         :return: 预测结果，每个点对应的聚类类别，用数字 1-K 表示
         """
-        predict = [np.argmin(self.distance(point, self.centers)) for point in X]
+        predict = [np.argmin(self.__distance(point, self.centers)) for point in X]
         return np.array(predict, dtype=int)
 
-    def distance(self, point, center):
+    def __distance(self, point, center):
         """
         计算一个点到质心的距离
         :param point: 一个点的坐标
